@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QToolBar>
 
 main_window::main_window()
 {
@@ -22,6 +23,7 @@ main_window::main_window()
     setup_file_menu();
     setup_edit_menu();
     setup_format_menu();
+    setup_format_toolbar();
 }
 
 main_window::~main_window() = default;
@@ -196,4 +198,48 @@ void main_window::apply_transform(const text_transform& transform) const
         }
     }
     cursor.endEditBlock();
+}
+
+void main_window::setup_format_toolbar()
+{
+    auto* toolbar = addToolBar("Format");
+    toolbar->setIconSize(QSize(16, 16));
+
+    auto* action_bold = toolbar->addAction(QIcon("data/images/bold.svg"), "Bold");
+    action_bold->setCheckable(true);
+    action_bold->setShortcut(QKeySequence("Ctrl+B"));
+    connect(action_bold, &QAction::triggered, this, [this](const bool checked)
+    {
+        QTextCharFormat fmt;
+        fmt.setFontWeight(checked ? QFont::Bold : QFont::Normal);
+        editor->mergeCurrentCharFormat(fmt);
+    });
+
+    auto* action_italic = toolbar->addAction(QIcon("data/images/italic.svg"), "Italic");
+    action_italic->setCheckable(true);
+    action_italic->setShortcut(QKeySequence("Ctrl+I"));
+    connect(action_italic, &QAction::triggered, this, [this](const bool checked)
+    {
+        QTextCharFormat fmt;
+        fmt.setFontItalic(checked);
+        editor->mergeCurrentCharFormat(fmt);
+    });
+
+    auto* action_underline = toolbar->addAction(QIcon("data/images/underline.svg"), "Underline");
+    action_underline->setCheckable(true);
+    action_underline->setShortcut(QKeySequence("Ctrl+U"));
+    connect(action_underline, &QAction::triggered, this, [this](const bool checked)
+    {
+        QTextCharFormat fmt;
+        fmt.setFontUnderline(checked);
+        editor->mergeCurrentCharFormat(fmt);
+    });
+
+    connect(editor, &QTextEdit::currentCharFormatChanged,
+            this, [action_bold, action_italic, action_underline](const QTextCharFormat& fmt)
+            {
+                action_bold->setChecked(fmt.fontWeight() == QFont::Bold);
+                action_italic->setChecked(fmt.fontItalic());
+                action_underline->setChecked(fmt.fontUnderline());
+            });
 }
