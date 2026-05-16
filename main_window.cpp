@@ -20,6 +20,7 @@ main_window::main_window()
     transforms.push_back(std::make_unique<swap_case_transform>());
 
     setup_file_menu();
+    setup_edit_menu();
     setup_format_menu();
 }
 
@@ -124,6 +125,38 @@ void main_window::update_title()
     }
 }
 
+void main_window::setup_edit_menu()
+{
+    auto* edit_menu = menuBar()->addMenu("Edit");
+
+    auto* action_undo = edit_menu->addAction("Undo");
+    action_undo->setShortcut(QKeySequence::Undo);
+    connect(action_undo, &QAction::triggered, editor, &QTextEdit::undo);
+
+    auto* action_redo = edit_menu->addAction("Redo");
+    action_redo->setShortcut(QKeySequence::Redo);
+    connect(action_redo, &QAction::triggered, editor, &QTextEdit::redo);
+
+    edit_menu->addSeparator();
+
+    auto* action_cut = edit_menu->addAction("Cut");
+    action_cut->setShortcut(QKeySequence::Cut);
+    connect(action_cut, &QAction::triggered, editor, &QTextEdit::cut);
+
+    auto* action_copy = edit_menu->addAction("Copy");
+    action_copy->setShortcut(QKeySequence::Copy);
+    connect(action_copy, &QAction::triggered, editor, &QTextEdit::copy);
+
+    auto* action_paste = edit_menu->addAction("Paste");
+    action_paste->setShortcut(QKeySequence::Paste);
+    connect(action_paste, &QAction::triggered, editor, &QTextEdit::paste);
+
+    edit_menu->addSeparator();
+
+    auto* action_select_all = edit_menu->addAction("Select All");
+    action_select_all->setShortcut(QKeySequence::SelectAll);
+    connect(action_select_all, &QAction::triggered, editor, &QTextEdit::selectAll);
+}
 
 void main_window::setup_format_menu()
 {

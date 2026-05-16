@@ -19,6 +19,7 @@ public:
 private:
     void setup_file_menu();
     void setup_format_menu();
+    void setup_edit_menu();
     void apply_transform(const text_transform& transform) const;
 
     void open_file();
