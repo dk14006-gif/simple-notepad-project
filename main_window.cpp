@@ -1,4 +1,6 @@
 #include "main_window.h"
+#include "sort.h"
+#include "notepad_exception.h"
 
 #include <QTextEdit>
 #include <QMenuBar>
@@ -11,7 +13,7 @@
 #include <QHeaderView>
 #include <map>
 #include <sstream>
-#include <algorithm>
+#include <algorithm>А
 
 #include "ui_find_replace_dialog.h"
 #include "ui_word_frequency_dialog.h"
@@ -88,15 +90,31 @@ void main_window::open_file()
     {
         return;
     }
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    try
     {
-        return;
+        QFile file(path);
+        if (!file.exists())
+        {
+            throw file_not_found_exception(path.toStdString());
+        }
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            throw file_read_exception(path.toStdString());
+        }
+        QTextStream in(&file);
+        const auto contents = in.readAll();
+        if (in.status() != QTextStream::Ok)
+        {
+            throw file_read_exception(path.toStdString());
+        }
+        editor->setPlainText(contents);
+        current_file = path;
+        update_title();
     }
-    QTextStream in(&file);
-    editor->setPlainText(in.readAll());
-    current_file = path;
-    update_title();
+    catch (const notepad_exception& ex)
+    {
+        QMessageBox::critical(this, "Error", ex.what());
+    }
 }
 
 void main_window::save_file()
@@ -106,13 +124,20 @@ void main_window::save_file()
         save_file_as();
         return;
     }
-    QFile file(current_file);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    try
     {
-        return;
+        QFile file(current_file);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            throw file_write_exception(current_file.toStdString());
+        }
+        QTextStream out(&file);
+        out << editor->toPlainText();
     }
-    QTextStream out(&file);
-    out << editor->toPlainText();
+    catch (const notepad_exception& ex)
+    {
+        QMessageBox::critical(this, "Error", ex.what());
+    }
 }
 
 void main_window::save_file_as()
@@ -375,8 +400,8 @@ void main_window::show_word_frequency()
     }
 
     std::vector<std::pair<std::string, int>> sorted_freq(freq.begin(), freq.end());
-    std::sort(sorted_freq.begin(), sorted_freq.end(),
-              [](const auto& a, const auto& b) { return a.second > b.second; });
+    my::sort(sorted_freq.begin(), sorted_freq.end(),
+             [](const auto& a, const auto& b) { return a.second > b.second; });
 
     auto* dialog = new QDialog(this);
     dialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -400,13 +425,15 @@ void main_window::show_word_frequency()
 
     dialog->exec();
 }
+
 void main_window::setup_search_menu()
 {
     auto* search_menu = menuBar()->addMenu("Search");
 
     auto* action_find_replace = search_menu->addAction("Find / Replace...");
     action_find_replace->setShortcut(QKeySequence::Find);
-    connect(action_find_replace, &QAction::triggered, this, [this] {
+    connect(action_find_replace, &QAction::triggered, this, [this]
+    {
         show_find_replace_dialog();
     });
 }
@@ -416,7 +443,8 @@ void main_window::setup_tools_menu()
     auto* tools_menu = menuBar()->addMenu("Tools");
 
     const auto* action_word_freq = tools_menu->addAction("Word Frequency...");
-    connect(action_word_freq, &QAction::triggered, this, [this] {
+    connect(action_word_freq, &QAction::triggered, this, [this]
+    {
         show_word_frequency();
     });
 }

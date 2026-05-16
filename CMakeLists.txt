@@ -14,6 +14,7 @@ qt_add_executable(
         text_transforms.h
         find_replace_dialog.ui
         word_frequency_dialog.ui
+        sort.h
 )
 target_link_libraries(Notepad PRIVATE
         Qt6::Widgets
