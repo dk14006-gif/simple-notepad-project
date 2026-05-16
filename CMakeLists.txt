@@ -11,6 +11,7 @@ qt_add_executable(
         Notepad
         main.cpp
         main_window.cpp
+        text_transforms.h
 )
 target_link_libraries(Notepad PRIVATE
         Qt6::Widgets
