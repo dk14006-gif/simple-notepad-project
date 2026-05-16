@@ -12,6 +12,8 @@ qt_add_executable(
         main.cpp
         main_window.cpp
         text_transforms.h
+        find_replace_dialog.ui
+        word_frequency_dialog.ui
 )
 target_link_libraries(Notepad PRIVATE
         Qt6::Widgets

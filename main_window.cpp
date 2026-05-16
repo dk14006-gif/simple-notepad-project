@@ -6,6 +6,16 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QToolBar>
+#include <QPushButton>
+#include <QTableWidgetItem>
+#include <QHeaderView>
+#include <map>
+#include <sstream>
+#include <algorithm>
+
+#include "ui_find_replace_dialog.h"
+#include "ui_word_frequency_dialog.h"
+
 
 main_window::main_window()
 {
@@ -24,6 +34,8 @@ main_window::main_window()
     setup_edit_menu();
     setup_format_menu();
     setup_format_toolbar();
+    setup_search_menu();
+    setup_tools_menu();
 }
 
 main_window::~main_window() = default;
@@ -242,4 +254,169 @@ void main_window::setup_format_toolbar()
                 action_italic->setChecked(fmt.fontItalic());
                 action_underline->setChecked(fmt.fontUnderline());
             });
+}
+
+void main_window::show_find_replace_dialog()
+{
+    if (!find_replace_dlg)
+    {
+        find_replace_dlg = new QDialog(this);
+        find_replace_ui = std::make_unique<Ui::find_replace_dialog>();
+        find_replace_ui->setupUi(find_replace_dlg);
+
+        auto current_flags = [this]
+        {
+            auto flags = QTextDocument::FindFlags();
+            if (find_replace_ui->case_sensitive_check->isChecked())
+            {
+                flags |= QTextDocument::FindCaseSensitively;
+            }
+            return flags;
+        };
+
+        connect(find_replace_ui->find_next_button, &QPushButton::clicked,
+                find_replace_dlg, [this, current_flags]
+                {
+                    find_next(find_replace_ui->find_input->text(), current_flags());
+                });
+        connect(find_replace_ui->replace_button, &QPushButton::clicked,
+                find_replace_dlg, [this, current_flags]
+                {
+                    replace_current(find_replace_ui->find_input->text(),
+                                    find_replace_ui->replace_input->text(), current_flags());
+                });
+        connect(find_replace_ui->replace_all_button, &QPushButton::clicked,
+                find_replace_dlg, [this, current_flags]
+                {
+                    replace_all(find_replace_ui->find_input->text(),
+                                find_replace_ui->replace_input->text(), current_flags());
+                });
+        connect(find_replace_ui->close_button, &QPushButton::clicked,
+                find_replace_dlg, [this] { find_replace_dlg->hide(); });
+    }
+
+    find_replace_dlg->show();
+    find_replace_dlg->raise();
+    find_replace_dlg->activateWindow();
+}
+
+void main_window::find_next(const QString& term, const QTextDocument::FindFlags flags) const
+{
+    if (term.isEmpty())
+    {
+        return;
+    }
+    auto found = editor->document()->find(term, editor->textCursor(), flags);
+    if (found.isNull())
+    {
+        auto from_start = editor->textCursor();
+        from_start.movePosition(QTextCursor::Start);
+        found = editor->document()->find(term, from_start, flags);
+    }
+    if (!found.isNull())
+    {
+        editor->setTextCursor(found);
+    }
+}
+
+void main_window::replace_current(const QString& term, const QString& replacement,
+                                  const QTextDocument::FindFlags flags) const
+{
+    if (auto cursor = editor->textCursor(); cursor.hasSelection())
+    {
+        cursor.insertText(replacement);
+        editor->setTextCursor(cursor);
+    }
+    find_next(term, flags);
+}
+
+void main_window::replace_all(const QString& term, const QString& replacement,
+                              const QTextDocument::FindFlags flags) const
+{
+    if (term.isEmpty())
+    {
+        return;
+    }
+    auto start_cursor = editor->textCursor();
+    start_cursor.movePosition(QTextCursor::Start);
+    editor->setTextCursor(start_cursor);
+
+    while (true)
+    {
+        const auto found = editor->document()->find(term, editor->textCursor(), flags);
+        if (found.isNull())
+        {
+            break;
+        }
+        editor->setTextCursor(found);
+        auto c = editor->textCursor();
+        c.insertText(replacement);
+        editor->setTextCursor(c);
+    }
+}
+
+void main_window::show_word_frequency()
+{
+    const auto text = editor->toPlainText().toLower().toStdString();
+
+    std::map<std::string, int> freq;
+    std::istringstream stream(text);
+    std::string word;
+    while (stream >> word)
+    {
+        std::erase_if(word, [](const unsigned char c)
+        {
+            return !std::isalpha(c);
+        });
+        if (!word.empty())
+        {
+            ++freq[word];
+        }
+    }
+
+    std::vector<std::pair<std::string, int>> sorted_freq(freq.begin(), freq.end());
+    std::sort(sorted_freq.begin(), sorted_freq.end(),
+              [](const auto& a, const auto& b) { return a.second > b.second; });
+
+    auto* dialog = new QDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    Ui::word_frequency_dialog ui;
+    ui.setupUi(dialog);
+
+    ui.frequency_table->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    ui.frequency_table->horizontalHeaderItem(1)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+    ui.frequency_table->setRowCount(static_cast<int>(sorted_freq.size()));
+    for (int i = 0; i < static_cast<int>(sorted_freq.size()); ++i)
+    {
+        const auto& [w, count] = sorted_freq[i];
+        ui.frequency_table->setItem(i, 0, new QTableWidgetItem(QString::fromStdString(w)));
+        auto* count_item = new QTableWidgetItem(QString::number(count));
+        count_item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        ui.frequency_table->setItem(i, 1, count_item);
+    }
+    ui.frequency_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    ui.frequency_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+
+    dialog->exec();
+}
+void main_window::setup_search_menu()
+{
+    auto* search_menu = menuBar()->addMenu("Search");
+
+    auto* action_find_replace = search_menu->addAction("Find / Replace...");
+    action_find_replace->setShortcut(QKeySequence::Find);
+    connect(action_find_replace, &QAction::triggered, this, [this] {
+        show_find_replace_dialog();
+    });
+}
+
+void main_window::setup_tools_menu()
+{
+    auto* tools_menu = menuBar()->addMenu("Tools");
+
+    const auto* action_word_freq = tools_menu->addAction("Word Frequency...");
+    connect(action_word_freq, &QAction::triggered, this, [this] {
+        show_word_frequency();
+    });
 }
