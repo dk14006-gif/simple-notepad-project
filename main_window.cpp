@@ -43,6 +43,7 @@ main_window::main_window()
     setup_search_menu();
     setup_tools_menu();
     setup_status_bar();
+    setup_view_menu();
 
     m_spell_checker = std::make_unique<spell_checker>("data/words.txt");
     m_highlighter = new spell_checker_highlighter(editor->document(), m_spell_checker.get());
@@ -570,6 +571,7 @@ void main_window::choose_font()
         }
     }
 }
+
 void main_window::choose_text_color()
 {
     const QColor color = QColorDialog::getColor(editor->textColor(), this, "Text Color");
@@ -579,4 +581,46 @@ void main_window::choose_text_color()
         fmt.setForeground(color);
         editor->mergeCurrentCharFormat(fmt);
     }
+}
+
+void main_window::setup_view_menu()
+{
+    auto* view_menu = menuBar()->addMenu("View");
+
+    auto* action_zoom_in = view_menu->addAction("Zoom In");
+    action_zoom_in->setShortcut(QKeySequence::ZoomIn);
+    connect(action_zoom_in, &QAction::triggered, this, &main_window::zoom_in);
+
+    auto* action_zoom_out = view_menu->addAction("Zoom Out");
+    action_zoom_out->setShortcut(QKeySequence::ZoomOut);
+    connect(action_zoom_out, &QAction::triggered, this, &main_window::zoom_out);
+
+    auto* action_zoom_reset = view_menu->addAction("Reset Zoom");
+    action_zoom_reset->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_0));
+    connect(action_zoom_reset, &QAction::triggered, this, &main_window::zoom_reset);
+}
+
+void main_window::zoom_in()
+{
+    m_zoom_level += 2;
+    editor->zoomIn(2);
+}
+
+void main_window::zoom_out()
+{
+    m_zoom_level -= 2;
+    editor->zoomOut(2);
+}
+
+void main_window::zoom_reset()
+{
+    if (m_zoom_level > 0)
+    {
+        editor->zoomOut(m_zoom_level);
+    }
+    else if (m_zoom_level < 0)
+    {
+        editor->zoomIn(m_zoom_level);
+    }
+    m_zoom_level = 0;
 }
