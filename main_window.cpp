@@ -13,7 +13,10 @@
 #include <QHeaderView>
 #include <map>
 #include <sstream>
-#include <algorithm>А
+#include <algorithm>
+#include <QMenu>
+#include <QRegularExpression>
+#include <QFontDialog>
 
 #include "ui_find_replace_dialog.h"
 #include "ui_word_frequency_dialog.h"
@@ -38,7 +41,12 @@ main_window::main_window()
     setup_format_toolbar();
     setup_search_menu();
     setup_tools_menu();
+    setup_status_bar();
+
     m_spell_checker = std::make_unique<spell_checker>("data/words.txt");
+    m_highlighter = new spell_checker_highlighter(editor->document(), m_spell_checker.get());
+    editor->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(editor, &QTextEdit::customContextMenuRequested, this, &main_window::show_context_menu);
 }
 
 main_window::~main_window() = default;
@@ -211,6 +219,12 @@ void main_window::setup_format_menu()
             apply_transform(*transform);
         });
     }
+    format_menu->addSeparator();
+    const auto* action_font = format_menu->addAction("Font...");
+    connect(action_font, &QAction::triggered, this, [this]
+    {
+        choose_font();
+    });
 }
 
 void main_window::apply_transform(const text_transform& transform) const
@@ -448,4 +462,105 @@ void main_window::setup_tools_menu()
     {
         show_word_frequency();
     });
+    tools_menu->addSeparator();
+
+    const auto* action_spell = tools_menu->addAction("Check Spelling...");
+    connect(action_spell, &QAction::triggered, this, [this]
+    {
+        m_highlighter->rehighlight();
+    });
+}
+
+void main_window::show_context_menu(const QPoint& pos)
+{
+    QTextCursor cursor = editor->cursorForPosition(pos);
+    cursor.select(QTextCursor::WordUnderCursor);
+    const QString word = cursor.selectedText();
+
+    QMenu* menu = editor->createStandardContextMenu();
+
+    if (!word.isEmpty() && !m_spell_checker->is_correct(word.toStdString()))
+    {
+        menu->addSeparator();
+
+        const auto sugg = m_spell_checker->suggestions(word.toStdString(), 5);
+        if (sugg.empty())
+        {
+            auto* no_sugg = menu->addAction("(No suggestions)");
+            no_sugg->setEnabled(false);
+        }
+        else
+        {
+            for (const auto& suggestion : sugg)
+            {
+                const QString s = QString::fromStdString(suggestion);
+                menu->addAction(s, this, [this, cursor, s]() mutable
+                {
+                    editor->setTextCursor(cursor);
+                    editor->textCursor().insertText(s);
+                });
+            }
+        }
+    }
+
+    menu->exec(editor->viewport()->mapToGlobal(pos));
+    delete menu;
+}
+
+void main_window::setup_status_bar()
+{
+    m_label_words = new QLabel("Words: 0");
+    m_label_lines = new QLabel("Lines: 1");
+    m_label_cursor = new QLabel("Ln 1, Col 1");
+
+    statusBar()->addPermanentWidget(m_label_words);
+    statusBar()->addPermanentWidget(m_label_lines);
+    statusBar()->addPermanentWidget(m_label_cursor);
+
+    connect(editor, &QTextEdit::textChanged, this, &main_window::update_status_bar);
+    connect(editor, &QTextEdit::cursorPositionChanged, this, &main_window::update_status_bar);
+}
+
+void main_window::update_status_bar()
+{
+    const QString text = editor->toPlainText();
+    int word_count = 0;
+    if (!text.trimmed().isEmpty())
+    {
+        static QRegularExpression word_re("\\S+");
+        auto it = word_re.globalMatch(text);
+        while (it.hasNext())
+        {
+            it.next();
+            ++word_count;
+        }
+    }
+    const int line_count = text.isEmpty() ? 1 : text.count('\n') + 1;
+    const QTextCursor cursor = editor->textCursor();
+    const int line = cursor.blockNumber() + 1;
+    const int col = cursor.columnNumber() + 1;
+
+    m_label_words->setText(QString("Words: %1").arg(word_count));
+    m_label_lines->setText(QString("Lines: %1").arg(line_count));
+    m_label_cursor->setText(QString("Ln %1, Col %2").arg(line).arg(col));
+}
+
+void main_window::choose_font()
+{
+    bool ok = false;
+    const QFont font = QFontDialog::getFont(&ok, editor->currentFont(), this, "Font");
+    if (ok)
+    {
+        QTextCursor cursor = editor->textCursor();
+        if (cursor.hasSelection())
+        {
+            QTextCharFormat fmt;
+            fmt.setFont(font);
+            cursor.mergeCharFormat(fmt);
+        }
+        else
+        {
+            editor->setFont(font);
+        }
+    }
 }

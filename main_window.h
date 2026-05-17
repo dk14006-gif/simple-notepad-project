@@ -4,10 +4,13 @@
 #pragma once
 #include "spell_checker.h"
 #include "text_transforms.h"
+#include "spell_checker_highlighter.h"
 #include <QMainWindow>
 #include <QTextEdit>
 #include <memory>
 #include <vector>
+#include <QLabel>
+#include <QStatusBar>
 
 namespace Ui
 {
@@ -31,6 +34,9 @@ private:
     void setup_tools_menu();
     void setup_search_menu();
     void show_word_frequency();
+    void setup_status_bar();
+    void update_status_bar();
+    void choose_font();
 
     void apply_transform(const text_transform& transform) const;
     void show_find_replace_dialog();
@@ -39,6 +45,8 @@ private:
                          QTextDocument::FindFlags flags = QTextDocument::FindFlags()) const;
     void replace_all(const QString& term, const QString& replacement,
                      QTextDocument::FindFlags flags = QTextDocument::FindFlags()) const;
+    void show_context_menu(const QPoint& pos);
+
 
     void open_file();
     void save_file();
@@ -51,5 +59,10 @@ private:
     QDialog* find_replace_dlg = nullptr;
     std::unique_ptr<Ui::find_replace_dialog> find_replace_ui;
     std::unique_ptr<spell_checker> m_spell_checker;
+    spell_checker_highlighter* m_highlighter = nullptr;
+
+    QLabel* m_label_words = nullptr;
+    QLabel* m_label_lines = nullptr;
+    QLabel* m_label_cursor = nullptr;
 };
 #endif //SIMPLE_NOTEPAD_PROJECT_MAIN_WINDOW_H

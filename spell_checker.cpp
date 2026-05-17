@@ -68,29 +68,20 @@ int spell_checker::edit_distance(const std::string& a, const std::string& b) con
     }
     return dp[m][n];
 }
-std::vector<std::string>spell_checker::suggestions(const std::string& word, int max_count) const
+std::vector<std::string> spell_checker::suggestions(const std::string& word, int max_count) const
 {
     const std::string normalized = normalize(word);
     if (normalized.empty() || !m_loaded) return {};
 
-    std::vector<std::pair<int, std::string>> candidates;
-    for (const auto& dict_word : m_dictionary)
-    {
-        if (std::abs(static_cast<int>(dict_word.size()) - static_cast<int>(normalized.size())) > 3)
-        {
-            continue;
-        }
-        int dist = edit_distance(normalized, dict_word);
-        if (dist <= 2)
-        {
-            candidates.emplace_back(dist, dict_word);
-        }
-    }
-    std::sort(candidates.begin(), candidates.end());
     std::vector<std::string> result;
-    for (int i = 0; i < std::min(max_count, static_cast<int>(candidates.size())); ++i)
-    {
-        result.push_back(candidates[i].second);
+
+    const std::string prefix = normalized.size() >= 3 ? normalized.substr(0, 3) : normalized;
+    auto it = m_dictionary.lower_bound(prefix);
+
+    for (; it != m_dictionary.end() && static_cast<int>(result.size()) < max_count; ++it) {
+        if (it->substr(0, prefix.size()) != prefix) break;
+        result.push_back(*it);
     }
+
     return result;
 }
