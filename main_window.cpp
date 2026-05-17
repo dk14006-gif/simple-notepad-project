@@ -38,6 +38,7 @@ main_window::main_window()
     setup_format_toolbar();
     setup_search_menu();
     setup_tools_menu();
+    m_spell_checker = std::make_unique<spell_checker>("data/words.txt");
 }
 
 main_window::~main_window() = default;

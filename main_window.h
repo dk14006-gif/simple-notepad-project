@@ -2,7 +2,7 @@
 #define SIMPLE_NOTEPAD_PROJECT_MAIN_WINDOW_H
 
 #pragma once
-
+#include "spell_checker.h"
 #include "text_transforms.h"
 #include <QMainWindow>
 #include <QTextEdit>
@@ -50,5 +50,6 @@ private:
     std::vector<std::unique_ptr<text_transform>> transforms;
     QDialog* find_replace_dlg = nullptr;
     std::unique_ptr<Ui::find_replace_dialog> find_replace_ui;
+    std::unique_ptr<spell_checker> m_spell_checker;
 };
 #endif //SIMPLE_NOTEPAD_PROJECT_MAIN_WINDOW_H

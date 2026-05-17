@@ -15,6 +15,10 @@ qt_add_executable(
         find_replace_dialog.ui
         word_frequency_dialog.ui
         sort.h
+        spell_checker.cpp
+        spell_checker.h
+        spell_checker_highlighter.cpp
+        spell_checker_highlighter.h
 )
 target_link_libraries(Notepad PRIVATE
         Qt6::Widgets
