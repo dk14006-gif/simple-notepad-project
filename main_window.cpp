@@ -17,6 +17,7 @@
 #include <QMenu>
 #include <QRegularExpression>
 #include <QFontDialog>
+#include <QColorDialog>
 
 #include "ui_find_replace_dialog.h"
 #include "ui_word_frequency_dialog.h"
@@ -224,6 +225,11 @@ void main_window::setup_format_menu()
     connect(action_font, &QAction::triggered, this, [this]
     {
         choose_font();
+    });
+    const auto* action_color = format_menu->addAction("Text Color...");
+    connect(action_color, &QAction::triggered, this, [this]
+    {
+        choose_text_color();
     });
 }
 
@@ -562,5 +568,15 @@ void main_window::choose_font()
         {
             editor->setFont(font);
         }
+    }
+}
+void main_window::choose_text_color()
+{
+    const QColor color = QColorDialog::getColor(editor->textColor(), this, "Text Color");
+    if (color.isValid())
+    {
+        QTextCharFormat fmt;
+        fmt.setForeground(color);
+        editor->mergeCurrentCharFormat(fmt);
     }
 }

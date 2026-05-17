@@ -37,6 +37,7 @@ private:
     void setup_status_bar();
     void update_status_bar();
     void choose_font();
+    void choose_text_color();
 
     void apply_transform(const text_transform& transform) const;
     void show_find_replace_dialog();
