@@ -56,11 +56,11 @@ main_window::main_window()
     m_line_number_area->setFont(editor->font());
 
     connect(editor->document(), &QTextDocument::blockCountChanged,
-        this, [this] { update_line_number_area(); });
+            this, [this] { update_line_number_area(); });
     connect(editor->verticalScrollBar(), &QScrollBar::valueChanged,
-        this, [this] { m_line_number_area->update(); });
+            this, [this] { m_line_number_area->update(); });
     connect(editor, &QTextEdit::cursorPositionChanged,
-        this, [this] { m_line_number_area->update(); });
+            this, [this] { m_line_number_area->update(); });
 
     update_line_number_area();
 }
@@ -489,6 +489,7 @@ void main_window::setup_tools_menu()
     connect(action_spell, &QAction::triggered, this, [this]
     {
         m_highlighter->rehighlight();
+        statusBar()->showMessage("Spell check complete.", 3000);
     });
 }
 
@@ -634,10 +635,11 @@ void main_window::zoom_reset()
     }
     else if (m_zoom_level < 0)
     {
-        editor->zoomIn(m_zoom_level);
+        editor->zoomIn(-m_zoom_level);
     }
     m_zoom_level = 0;
 }
+
 void main_window::update_line_number_area()
 {
     m_line_number_area->setFont(editor->font());
