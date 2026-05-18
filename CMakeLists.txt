@@ -11,7 +11,7 @@ qt_add_executable(
         Notepad
         main.cpp
         main_window.cpp
-        text_transforms.h
+        text_transform.h
         find_replace_dialog.ui
         word_frequency_dialog.ui
         sort.h

@@ -3,7 +3,7 @@
 
 #pragma once
 #include "spell_checker.h"
-#include "text_transforms.h"
+#include "text_transform.h"
 #include "spell_checker_highlighter.h"
 #include "line_number_area.h"
 #include <QMainWindow>
