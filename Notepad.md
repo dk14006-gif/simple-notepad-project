@@ -68,7 +68,11 @@ beside the editor. It repaints on scroll, cursor movement, and block count chang
 cmake -S . -B build
 cmake --build build
 ```
-
+First, remove the old build folder if it exists:
+```powershell
+Remove-Item -Recurse -Force build
+```
+Then build from scratch:
 ```powershell
 cmake -S . -B build -G "Ninja" -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/mingw_64"
 cmake --build build
