@@ -5,6 +5,7 @@
 #include "spell_checker.h"
 #include "text_transforms.h"
 #include "spell_checker_highlighter.h"
+#include "line_number_area.h"
 #include <QMainWindow>
 #include <QTextEdit>
 #include <memory>
@@ -42,6 +43,7 @@ private:
     void setup_view_menu();
     void zoom_out();
     void zoom_reset();
+    void update_line_number_area();
 
     int m_zoom_level = 0;
 
@@ -71,5 +73,7 @@ private:
     QLabel* m_label_words = nullptr;
     QLabel* m_label_lines = nullptr;
     QLabel* m_label_cursor = nullptr;
+
+    line_number_area* m_line_number_area = nullptr;
 };
 #endif //SIMPLE_NOTEPAD_PROJECT_MAIN_WINDOW_H

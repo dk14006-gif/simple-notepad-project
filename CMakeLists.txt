@@ -19,6 +19,8 @@ qt_add_executable(
         spell_checker.h
         spell_checker_highlighter.cpp
         spell_checker_highlighter.h
+        line_number_area.cpp
+        line_number_area.h
 )
 target_link_libraries(Notepad PRIVATE
         Qt6::Widgets

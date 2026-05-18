@@ -18,6 +18,8 @@
 #include <QRegularExpression>
 #include <QFontDialog>
 #include <QColorDialog>
+#include <QScrollBar>
+#include <QTextDocument>
 
 #include "ui_find_replace_dialog.h"
 #include "ui_word_frequency_dialog.h"
@@ -49,6 +51,18 @@ main_window::main_window()
     m_highlighter = new spell_checker_highlighter(editor->document(), m_spell_checker.get());
     editor->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(editor, &QTextEdit::customContextMenuRequested, this, &main_window::show_context_menu);
+
+    m_line_number_area = new line_number_area(editor);
+    m_line_number_area->setFont(editor->font());
+
+    connect(editor->document(), &QTextDocument::blockCountChanged,
+        this, [this] { update_line_number_area(); });
+    connect(editor->verticalScrollBar(), &QScrollBar::valueChanged,
+        this, [this] { m_line_number_area->update(); });
+    connect(editor, &QTextEdit::cursorPositionChanged,
+        this, [this] { m_line_number_area->update(); });
+
+    update_line_number_area();
 }
 
 main_window::~main_window() = default;
@@ -623,4 +637,14 @@ void main_window::zoom_reset()
         editor->zoomIn(m_zoom_level);
     }
     m_zoom_level = 0;
+}
+void main_window::update_line_number_area()
+{
+    m_line_number_area->setFont(editor->font());
+    const int width = m_line_number_area->sizeHint().width();
+    m_line_number_area->setGeometry(
+        editor->x(), editor->y(), width, editor->height());
+    QTextDocument* doc = editor->document();
+    doc->setDocumentMargin(width);
+    m_line_number_area->update();
 }
